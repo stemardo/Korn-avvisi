@@ -12,41 +12,21 @@ permissions:
 jobs:
   connessione:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 2
     steps:
-      - name: Verifica accesso HTTP alla pagina pubblica
+      - name: Leggi la disponibilita dal catalogo Eventim
         run: |
           python3 - <<'PY'
-          import html, json, os, re, subprocess
-          from pathlib import Path
-
-          url = 'https://www.ticketone.it/artist/korn/'
-          for index, protocol in enumerate(['--http1.1', '--http2']):
-              path = Path(os.environ['RUNNER_TEMP']) / ('ticketone-' + str(index) + '.html')
-              result = subprocess.run(
-                  ['curl', '-sS', '-L', '--max-time', '20', protocol, '-o', str(path),
-                   '-w', '%{http_code}', url],
-                  capture_output=True, text=True, timeout=25)
-              body = path.read_text(errors='replace') if path.exists() else ''
-              without_scripts = re.sub(r'<(script|style)\b[^>]*>.*?</\1>', '', body, flags=re.I|re.S)
-              text = html.unescape(re.sub(r'<[^>]*>', ' ', without_scripts))
-              text = re.sub(r'\s+', ' ', text)
-              data = {
-                  'protocol': protocol, 'exit_code': result.returncode,
-                  'http_status': result.stdout.strip(), 'bytes': len(body),
-                  'network_error': result.stderr[:1500], 'public_page_text': text[:4000],
-                  'event_links': sorted(set(re.findall(
-                      r'(?:https://www\.ticketone\.it)?/event/[^"\'\s<>]+', body)))[:20],
-              }
-              print(json.dumps(data, ensure_ascii=False))
-              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
-                  summary.write('<pre>' + html.escape(json.dumps(data, ensure_ascii=False, indent=2)) + '</pre>\n')
-              if data['http_status'] == '200' and 'korn' in body.lower():
-                  # Solo contenuti della pagina pubblica, senza cookie o credenziali.
-                  for match in list(re.finditer(r'availability|eventId|event-id|<script[^>]+src=', body, re.I))[:20]:
-                      print('PUBLIC_MARKUP:', body[max(0,match.start()-120):match.start()+450])
-                  break
-              if data['http_status'] in ('403', '429'):
-                  print('Accesso negato o limitato: arresto della diagnosi.')
-                  break
+          import json, urllib.request, urllib.parse
+          params = {'webId':'web__ticketone-it','language':'it','search_term':'Korn',
+                    'page':1,'top':10,'sort':'DateAsc'}
+          url = 'https://public-api.eventim.com/websearch/search/api/exploration/v1/products?' + urllib.parse.urlencode(params)
+          with urllib.request.urlopen(urllib.request.Request(url, headers={'Accept':'application/json'}), timeout=25) as response:
+              data = json.load(response)
+          events = [p for p in data['products'] if str(p.get('productId')) == '21443423']
+          assert len(events) == 1, 'Evento Korn non univoco nel catalogo'
+          event = events[0]
+          assert type(event.get('inStock')) is bool, 'Disponibilita non interpretabile'
+          print(json.dumps(event, ensure_ascii=False))
+          print('Accesso Eventim riuscito; inStock =', event['inStock'])
           PY
