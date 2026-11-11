@@ -9,27 +9,31 @@ permissions:
 jobs:
   verifica:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
-      - name: Leggi la pagina pubblica fanSALE
+      - name: Installa browser standard
+        run: |
+          python3 -m pip install playwright==1.62.0
+          python3 -m playwright install --with-deps chromium
+      - name: Apri fanSALE nel browser
         run: |
           python3 - <<'PY'
-          import json, urllib.request, urllib.error, re, html
-          url = 'https://www.fansale.it/fansale/'
-          try:
-              with urllib.request.urlopen(url, timeout=25) as response:
-                  body = response.read(1500000).decode('utf-8', errors='replace')
-                  print('HTTP', response.status, 'URL', response.url, 'BYTES', len(body))
-              scripts = re.findall(r'<script[^>]+src=["\x27]([^"\x27]+)', body, flags=re.I)
-              links = re.findall(r'href=["\x27]([^"\x27]+)', body, flags=re.I)
-              plain = html.unescape(re.sub(r'<[^>]*>', ' ', re.sub(r'<(script|style)\b[^>]*>.*?</\1>', '', body, flags=re.I|re.S)))
-              print('PUBLIC_SCRIPTS', json.dumps(scripts[:30]))
-              print('PUBLIC_LINKS', json.dumps([s for s in links if re.search(r'korn|search|event',s,re.I)][:30]))
-              print('PUBLIC_TEXT', re.sub(r'\s+', ' ', plain)[:5000])
-          except urllib.error.HTTPError as exc:
-              print('HTTP', exc.code, 'PUBLIC_ERROR', exc.read(2000).decode(errors='replace'))
-              raise SystemExit(1)
-          except Exception as exc:
-              print(type(exc).__name__, str(exc))
-              raise SystemExit(1)
+          import json,re
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser=p.chromium.launch(headless=True,channel='chromium')
+              page=browser.new_page(locale='it-IT')
+              try:
+                  response=page.goto('https://www.fansale.it/',wait_until='domcontentloaded',timeout=35000)
+                  page.wait_for_timeout(7000)
+                  print('HTTP',response.status if response else None,'URL',page.url,'TITLE',page.title())
+                  print('PUBLIC_TEXT',page.locator('body').inner_text()[:6000])
+                  links=page.locator('a[href]').evaluate_all('(els)=>els.map(x=>({text:x.innerText,url:x.href}))')
+                  print('PUBLIC_LINKS',json.dumps([x for x in links if re.search(r'korn|search',x['text']+' '+x['url'],re.I)][:30],ensure_ascii=False))
+                  scripts=page.locator('script[src]').evaluate_all('(els)=>els.map(x=>x.src)')
+                  print('PUBLIC_SCRIPTS',json.dumps(scripts[:20]))
+                  if response is None or response.status>=400:
+                      raise RuntimeError('Pagina fanSALE non accessibile.')
+              finally:
+                  browser.close()
           PY
