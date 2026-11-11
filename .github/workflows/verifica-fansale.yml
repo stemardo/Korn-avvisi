@@ -9,12 +9,12 @@ permissions:
 jobs:
   verifica:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
       - name: Installa browser standard
         run: |
           python3 -m pip install playwright==1.62.0
-          python3 -m playwright install --with-deps chromium
+          python3 -m playwright install chromium
       - name: Apri fanSALE nel browser
         run: |
           python3 - <<'PY'
