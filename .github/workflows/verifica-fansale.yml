@@ -1,0 +1,35 @@
+name: Verifica accesso fanSALE
+on:
+  push:
+    paths:
+      - .github/workflows/verifica-fansale.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Leggi la pagina pubblica fanSALE
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, urllib.error, re, html
+          url = 'https://www.fansale.it/fansale/'
+          try:
+              with urllib.request.urlopen(url, timeout=25) as response:
+                  body = response.read(1500000).decode('utf-8', errors='replace')
+                  print('HTTP', response.status, 'URL', response.url, 'BYTES', len(body))
+              scripts = re.findall(r'<script[^>]+src=["\x27]([^"\x27]+)', body, flags=re.I)
+              links = re.findall(r'href=["\x27]([^"\x27]+)', body, flags=re.I)
+              plain = html.unescape(re.sub(r'<[^>]*>', ' ', re.sub(r'<(script|style)\b[^>]*>.*?</\1>', '', body, flags=re.I|re.S)))
+              print('PUBLIC_SCRIPTS', json.dumps(scripts[:30]))
+              print('PUBLIC_LINKS', json.dumps([s for s in links if re.search(r'korn|search|event',s,re.I)][:30]))
+              print('PUBLIC_TEXT', re.sub(r'\s+', ' ', plain)[:5000])
+          except urllib.error.HTTPError as exc:
+              print('HTTP', exc.code, 'PUBLIC_ERROR', exc.read(2000).decode(errors='replace'))
+              raise SystemExit(1)
+          except Exception as exc:
+              print(type(exc).__name__, str(exc))
+              raise SystemExit(1)
+          PY
