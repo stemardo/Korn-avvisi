@@ -1,0 +1,52 @@
+name: Diagnosi connessione TicketOne
+
+on:
+  push:
+    paths:
+      - .github/workflows/connessione-ticketone.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  connessione:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verifica accesso HTTP alla pagina pubblica
+        run: |
+          python3 - <<'PY'
+          import html, json, os, re, subprocess
+          from pathlib import Path
+
+          url = 'https://www.ticketone.it/artist/korn/'
+          for index, protocol in enumerate(['--http1.1', '--http2']):
+              path = Path(os.environ['RUNNER_TEMP']) / ('ticketone-' + str(index) + '.html')
+              result = subprocess.run(
+                  ['curl', '-sS', '-L', '--max-time', '20', protocol, '-o', str(path),
+                   '-w', '%{http_code}', url],
+                  capture_output=True, text=True, timeout=25)
+              body = path.read_text(errors='replace') if path.exists() else ''
+              without_scripts = re.sub(r'<(script|style)\b[^>]*>.*?</\1>', '', body, flags=re.I|re.S)
+              text = html.unescape(re.sub(r'<[^>]*>', ' ', without_scripts))
+              text = re.sub(r'\s+', ' ', text)
+              data = {
+                  'protocol': protocol, 'exit_code': result.returncode,
+                  'http_status': result.stdout.strip(), 'bytes': len(body),
+                  'network_error': result.stderr[:1500], 'public_page_text': text[:4000],
+                  'event_links': sorted(set(re.findall(
+                      r'(?:https://www\.ticketone\.it)?/event/[^"\'\s<>]+', body)))[:20],
+              }
+              print(json.dumps(data, ensure_ascii=False))
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                  summary.write('<pre>' + html.escape(json.dumps(data, ensure_ascii=False, indent=2)) + '</pre>\n')
+              if data['http_status'] == '200' and 'korn' in body.lower():
+                  # Solo contenuti della pagina pubblica, senza cookie o credenziali.
+                  for match in list(re.finditer(r'availability|eventId|event-id|<script[^>]+src=', body, re.I))[:20]:
+                      print('PUBLIC_MARKUP:', body[max(0,match.start()-120):match.start()+450])
+                  break
+              if data['http_status'] in ('403', '429'):
+                  print('Accesso negato o limitato: arresto della diagnosi.')
+                  break
+          PY
