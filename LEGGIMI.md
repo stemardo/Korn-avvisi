@@ -1,51 +1,65 @@
-# Primo test gratuito per Korn, TicketOne e Telegram
+# Gestione del monitor Korn
 
-Questa versione verifica l'accesso a TicketOne da GitHub e, su richiesta,
-manda un messaggio di prova Telegram. **Non monitora ancora la disponibilita\u0300**:
-prima occorre vedere la pagina caricata dal browser e individuare il segnale
-di disponibilita\u0300 nella vendita dell'evento di Assago del 21 novembre 2026.
+Il monitor operativo e `monitor.py`, eseguito dal workflow **Avvisi biglietti Korn**.
+I vecchi workflow di verifica restano disponibili soltanto per prove manuali.
 
-1. Crea un account gratuito su https://github.com e un repository **Public**.
-   Le esecuzioni standard Ubuntu nei repository pubblici sono gratuite.
-   Non attivare runner a pagamento o caricamenti periodici di artifact.
-2. Carica `verifica.py` nella cartella principale. Crea il secondo file con
-   il percorso preciso `.github/workflows/verifica.yml` e incollaci il contenuto
-   del file YAML qui fornito. Le cartelle che iniziano con un punto possono
-   essere nascoste nel file manager.
-3. In Settings > Secrets and variables > Actions > New repository secret,
-   aggiungi `TELEGRAM_BOT_TOKEN`. Incolla il token di BotFather nel valore,
-   mai nel codice, nei commenti o nella chat.
-4. Invia `/start` nella chat privata del tuo nuovo bot subito prima del test.
-5. Per provare Telegram vai in Actions > Verifica TicketOne e Telegram > Run workflow,
-   spunta la prova Telegram e premi Run workflow. Questa opzione prova solo Telegram,
-   senza attendere TicketOne. Lasciandola non selezionata, provi invece la pagina.
-6. Controlla il messaggio Telegram e apri il riepilogo dell'esecuzione GitHub.
-   La sezione Test di accesso TicketOne contiene il testo pubblico della pagina.
-   Condividi il risultato per completare il riconoscimento dei biglietti.
-7. Il messaggio di prova Telegram contiene il tuo chat ID: salvalo come secret
-   `TELEGRAM_CHAT_ID`, per consentire agli avvisi futuri di raggiungerti anche
-   dopo la scadenza degli aggiornamenti `/start`.
+## Fonte e riconoscimento
 
-Se esistono piu\u0300 chat candidate, il test non sceglie un destinatario: configura
-il tuo ID come secret `TELEGRAM_CHAT_ID`. Non imposta webhook, non acquista
-biglietti e non tenta di superare CAPTCHA o blocchi del sito.
+Fonte: https://public-api.eventim.com/websearch/search/api/exploration/v1/products
+con mercato `web__ticketone-it` e ricerca Korn. L'accesso e stato verificato
+dal runner GitHub. Non vengono caricati browser ne usate credenziali TicketOne.
 
-Il progetto pubblico espone codice e risultati dei test su una pagina pubblica;
-i secret restano nei segreti GitHub. Usa solo il token del bot creato per questo
-progetto. Se un token viene pubblicato, revocalo con BotFather.
+Il concerto e identificato da ID `21443423`, gruppo `4115252`, nome Korn,
+Unipol Forum e inizio `2026-11-21T21:00:00+01:00`.
+Il risultato deve contenere un booleano `inStock`: assenze, risposte ambigue o
+errori vengono trattati come disponibilita sconosciuta.
 
-Dopo un test riuscito, il programma potra\u0300 essere completato con uno stato
-distinto per disponibilita\u0300, indisponibilita\u0300 e controllo non riuscito, senza
-interpretare un errore o una pagina vuota come biglietti disponibili.
+## Avvisi e frequenza
 
-I controlli gratuiti programmati possono subire ritardi; nei repository pubblici
-GitHub disattiva le pianificazioni dopo 60 giorni senza attivita\u0300. Le esecuzioni
-future dovranno fermarsi dopo il concerto.
+Il controllo e programmato ogni 15 minuti ai minuti 7, 22, 37 e 52.
+GitHub puo avviarlo in ritardo o saltare un'esecuzione in caso di congestione.
+Il bot invia un messaggio all'attivazione, poi solo quando la disponibilita
+passa da assente a presente. Dopo tre errori consecutivi invia un avviso tecnico,
+al massimo una volta ogni 24 ore; segnala anche il ripristino.
 
-Stato del test, 11 novembre 2026: il primo accesso dal runner GitHub ha restituito
-ERR_HTTP2_PROTOCOL_ERROR. Una seconda prova con Chromium completo e HTTP/1.1
-ha raggiunto il timeout di 45 secondi. Non e\u0300 ancora possibile confermare la
-lettura della disponibilita\u0300 da GitHub. Nessun controllo ricorrente e\u0300 attivo.
+Lo stato pubblico `monitor-state.json` contiene soltanto l'ID evento, lo stato
+del controllo e date tecniche. Non contiene token o chat ID. I segreti restano
+in Settings > Secrets and variables > Actions.
 
-Fonti: https://docs.github.com/en/billing/concepts/product-billing/github-actions
-e https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
+Se Telegram conferma un messaggio e il salvataggio dello stato su GitHub fallisce,
+il messaggio puo essere ripetuto al controllo successivo. Se il catalogo e in ritardo,
+l'avviso puo arrivare dopo che la disponibilita reale e gia cambiata.
+Non vengono verificati quantita, contiguita dei posti o settori specifici.
+
+Il monitor si disattiva automaticamente al primo controllo dopo il
+**21 novembre 2026 alle 21:00, ora italiana**. I permessi del workflow sono:
+`contents: write` per salvare lo stato e `actions: write` per fermare la pianificazione.
+La disattivazione a scadenza e verificata con un test simulato.
+
+## Pausa, ripresa e controllo manuale
+
+Apri https://github.com/stemardo/Korn-avvisi/actions/workflows/monitor.yml
+
+- Per una verifica aggiuntiva: Run workflow, seleziona main, poi Run workflow.
+- Per mettere in pausa: menu con i tre puntini, Disable workflow.
+- Per riprendere prima del concerto: Enable workflow.
+- Per controllare l'esito: apri l'ultima esecuzione e il suo riepilogo.
+
+## Costi e limiti
+
+Le esecuzioni standard GitHub-hosted sono gratuite nei repository pubblici.
+Il workflow non carica artifact e non usa cache o runner a pagamento.
+Non e un servizio con tempi di esecuzione garantiti e non riserva biglietti.
+
+GitHub puo disattivare i workflow programmati pubblici dopo 60 giorni di inattivita,
+oltre la durata prevista di questo monitor.
+
+Fonti:
+https://docs.github.com/en/billing/concepts/product-billing/github-actions
+https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
+
+## Verifiche del codice
+
+`python3 -m unittest -v test_monitor.py` verifica segnali ambigui, corrispondenza
+dell'evento, avvisi sui cambi di disponibilita, errori, mancata consegna e scadenza.
+I test vengono eseguiti anche prima di ogni controllo GitHub.
