@@ -67,7 +67,9 @@ def telegram():
 def ticketone():
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
-        options = {'headless': True}
+        # Chromium completo e HTTP/1.1 per compatibilita\u0300 con questo sito:
+        # il primo test GitHub ha restituito ERR_HTTP2_PROTOCOL_ERROR.
+        options = {'headless': True, 'channel': 'chromium', 'args': ['--disable-http2']}
         if os.environ.get('BROWSER_EXECUTABLE_PATH'):
             options['executable_path'] = os.environ['BROWSER_EXECUTABLE_PATH']
         browser = p.chromium.launch(**options)
