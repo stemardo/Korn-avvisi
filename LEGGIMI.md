@@ -16,9 +16,9 @@ di disponibilita\u0300 nella vendita dell'evento di Assago del 21 novembre 2026.
    aggiungi `TELEGRAM_BOT_TOKEN`. Incolla il token di BotFather nel valore,
    mai nel codice, nei commenti o nella chat.
 4. Invia `/start` nella chat privata del tuo nuovo bot subito prima del test.
-5. La pubblicazione dei file avvia automaticamente il solo test della pagina.
-   Per provare Telegram vai in Actions > Verifica TicketOne e Telegram > Run workflow, spunta
-   la prova Telegram e premi Run workflow.
+5. Per provare Telegram vai in Actions > Verifica TicketOne e Telegram > Run workflow,
+   spunta la prova Telegram e premi Run workflow. Questa opzione prova solo Telegram,
+   senza attendere TicketOne. Lasciandola non selezionata, provi invece la pagina.
 6. Controlla il messaggio Telegram e apri il riepilogo dell'esecuzione GitHub.
    La sezione Test di accesso TicketOne contiene il testo pubblico della pagina.
    Condividi il risultato per completare il riconoscimento dei biglietti.
@@ -41,6 +41,11 @@ interpretare un errore o una pagina vuota come biglietti disponibili.
 I controlli gratuiti programmati possono subire ritardi; nei repository pubblici
 GitHub disattiva le pianificazioni dopo 60 giorni senza attivita\u0300. Le esecuzioni
 future dovranno fermarsi dopo il concerto.
+
+Stato del test, 11 novembre 2026: il primo accesso dal runner GitHub ha restituito
+ERR_HTTP2_PROTOCOL_ERROR. Una seconda prova con Chromium completo e HTTP/1.1
+ha raggiunto il timeout di 45 secondi. Non e\u0300 ancora possibile confermare la
+lettura della disponibilita\u0300 da GitHub. Nessun controllo ricorrente e\u0300 attivo.
 
 Fonti: https://docs.github.com/en/billing/concepts/product-billing/github-actions
 e https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
