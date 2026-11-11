@@ -1,10 +1,6 @@
 name: Verifica TicketOne e Telegram
 
 on:
-  push:
-    paths:
-      - verifica.py
-      - .github/workflows/verifica.yml
   workflow_dispatch:
     inputs:
       telegram:
@@ -25,10 +21,12 @@ jobs:
         with:
           python-version: '3.12'
       - name: Installa il browser
+        if: ${{ !inputs.telegram }}
         run: |
           python -m pip install playwright==1.62.0
           python -m playwright install --with-deps chromium
       - name: Prova la lettura di TicketOne
+        if: ${{ !inputs.telegram }}
         run: python verifica.py
       - name: Prova Telegram
         if: ${{ always() && inputs.telegram }}
