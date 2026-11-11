@@ -1,8 +1,5 @@
 name: Verifica accesso fanSALE
 on:
-  push:
-    paths:
-      - .github/workflows/verifica-fansale.yml
   workflow_dispatch:
 permissions:
   contents: read
