@@ -1,0 +1,36 @@
+name: Avvisi biglietti Korn
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - monitor.py
+      - test_monitor.py
+      - .github/workflows/monitor.yml
+  workflow_dispatch:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: monitor-korn
+  cancel-in-progress: false
+
+jobs:
+  controlla:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verifica notifiche e riconoscimento evento
+        run: python3 -m unittest -v test_monitor.py
+      - name: Controlla Eventim e invia eventuali avvisi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 monitor.py
