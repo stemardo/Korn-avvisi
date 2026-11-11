@@ -31,3 +31,22 @@ Non occorrono altri token o servizi a pagamento. Sono usati soltanto runner stan
 Ubuntu pubblici, senza artifact o cache a pagamento.
 
 Per istruzioni, limiti e gestione del monitor leggi [LEGGIMI.md](LEGGIMI.md).
+
+## fanSALE: integrazione non attiva
+
+La pagina richiesta e https://www.fansale.it/tickets/all/korn/460942.
+Le prove dell'11 novembre 2026 dal runner GitHub non hanno consentito la lettura:
+richiesta HTTP in timeout, Chromium con ERR_HTTP2_PROTOCOL_ERROR e una prova
+HTTP/1.1 in timeout. Un ulteriore tentativo si e fermato nell'installazione
+delle dipendenze; la prova corretta senza APT e arrivata al sito ma non ha
+caricato la pagina.
+
+**Non e stato attivato un controllo ricorrente fanSALE. Il monitor TicketOne
+continua a funzionare.** La [diagnosi fanSALE](https://github.com/stemardo/Korn-avvisi/actions/workflows/verifica-fansale.yml)
+resta eseguibile manualmente e non invia avvisi Telegram.
+
+Una possibile alternativa da verificare nell'account dell'utente e la funzione
+«Alert Offerte» documentata nei
+[termini fanSALE, paragrafo 4.4](https://www.ticketone.it/campaign/termini-e-condizioni-fansale-ottobre-2024).
+Non e stata verificata la sua presenza nell'interfaccia attuale, ne e stata
+collegata al bot.
